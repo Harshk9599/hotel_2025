@@ -1,0 +1,67 @@
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const https = require('https');
+const { URLSearchParams } = require('url');
+const { DateTime } = require('luxon');
+const path = require('path');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.post('/submit', (req, res) => {
+  const client_id = process.env.CLIENT_ID;
+  const access_token = process.env.ACCESS_TOKEN;
+  const lock_id = process.env.LOCK_ID;
+  const keyboard_pwd_type = '3';
+  const keyboard_pwd_name = 'test1';
+
+  const start_date_time = DateTime.fromFormat(`${req.body.startDate} ${req.body.startTime}`, 'yyyy-MM-dd HH:mm');
+  const end_date_time = DateTime.fromFormat(`${req.body.endDate} ${req.body.endTime}`, 'yyyy-MM-dd HH:mm');
+
+  const start_timestamp_ms = start_date_time.toMillis();
+  const end_timestamp_ms = end_date_time.toMillis();
+  const current_timestamp_ms = DateTime.now().toMillis();
+
+  const data = new URLSearchParams({
+    clientId: client_id,
+    accessToken: access_token,
+    lockId: lock_id,
+    keyboardPwdType: keyboard_pwd_type,
+    keyboardPwdName: keyboard_pwd_name,
+    startDate: start_timestamp_ms,
+    endDate: end_timestamp_ms,
+    date: current_timestamp_ms
+  }).toString();
+
+  const options = {
+    hostname: 'euapi.sciener.com',
+    path: '/v3/keyboardPwd/get',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': data.length
+    }
+  };
+
+  const request = https.request(options, (response) => {
+    let responseData = '';
+    response.on('data', (chunk) => (responseData += chunk));
+    response.on('end', () => res.send(responseData));
+  });
+
+  request.on('error', (error) => {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  });
+
+  request.write(data);
+  request.end();
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}/`);
+});

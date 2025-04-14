@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Booking</title>
+    <style>
+        .hotel-container {
+            display: flex;
+            justify-content: space-evenly;
+            margin-bottom: 20px;
+        }
+
+        .hotel-container img {
+            /* width: 100px; */
+            width: 40%;
+            height: 300px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .hotel-container img:hover {
+            transform: scale(1.1);
+        }
+
+        .selected-hotel {
+            border: 3px solid blue;
+        }
+
+        #timestampForm {
+            display: flex;
+
+            /* flex-direction: column; */
+        }
+
+        #timestampForm label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 15%;
+            margin: 0px 10px;
+        }
+
+        #timestampForm input {
+
+
+
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+            width: 33%;
+            margin: 0px 10px;
+        }
+        #passcod{
+            display: flex;
+            margin: 10px;
+            /* flex-direction: column; */
+        }
+        #response{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: larger;
+            font-weight: 600;
+            background-color: antiquewhite;
+            border: 2px solid black;
+            border-radius: 12px;
+            margin: 0px 10px;
+            width: 15%;
+        }
+    </style>
+</head>
+
+<body>
+
+
+
+    <!-- <h1>Timestamp Converter</h1> -->
+    <h1>Hotel Booking</h1>
+    <div id="hotel-selection">
+        <h2>Select a Hotel</h2>
+        <div class="hotel-container">
+            <!-- <img id="hotel1" src="/hotel1.jpg" alt="Hotel 1" onclick="selectHotel('hotel1')" /> -->
+            <!-- <img id="hotel2" src="/hotel2.jpg" alt="Hotel 2" onclick="selectHotel('hotel2')" /> -->
+            <img id="hotel1"
+                src="https://images.pexels.com/photos/1375383/pexels-photo-1375383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+                alt="Hotel 1" onclick="selectHotel('hotel1')" />
+            <img id="hotel2"
+                src="https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+                alt="Hotel 2" onclick="selectHotel('hotel2')" />
+        </div>
+        <div id="price">Price: </div>
+    </div>
+
+    <div id="form">
+        <form id="timestampForm">
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" name="startDate"><br>
+            <label for="startTime">Start Time:</label>
+            <input type="time" id="startTime" name="startTime"><br>
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" name="endDate"><br>
+            <label for="endTime">End Time:</label>
+            <input type="time" id="endTime" name="endTime"><br>
+            <button type="submit" id="btn">Submit</button>
+        </form>
+    </div>
+    <!-- Inside index_new.html -->
+    <div id="passcod">
+        <h1>OTP is :-</h1>
+        <div id="response"></div>
+    </div>
+
+    <script>
+        function selectHotel(hotelId) {
+            document.getElementById("hotelSelected").value = hotelId;
+
+            // Update price based on selected hotel
+            var pricePerNight = hotelId === "hotel1" ? 100 : 150; // Adjust prices as needed
+            document.getElementById("pricePerNight").value = pricePerNight;
+            document.getElementById("price").textContent = "Price: $" + pricePerNight;
+
+            // Show date-time selection
+            document.getElementById("datetime-selection").style.display = "block";
+        }
+    </script>
+
+    <script src="client.js"></script>
+</body>
+
+</html>
