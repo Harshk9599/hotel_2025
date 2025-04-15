@@ -1,128 +1,92 @@
-require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const https = require('https');
-const { URLSearchParams } = require('url');
-const { DateTime } = require('luxon');
-const path = require('path');
 const nodemailer = require('nodemailer');
-
+const moment = require('moment-timezone');
+const axios = require('axios');
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-// Gmail transporter setup using App Password
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  },
-});
+// Endpoint to get keyboard password
+app.post('/submit', async (req, res) => {
+  const { startDate, startTime, endDate, endTime } = req.body;
 
-// Route to get keyboard password
-app.post('/submit', (req, res) => {
-  const client_id = process.env.CLIENT_ID;
-  const access_token = process.env.ACCESS_TOKEN;
-  const lock_id = process.env.LOCK_ID;
-  const keyboard_pwd_type = '3';
-  const keyboard_pwd_name = 'test1';
+  // Use Asia/Kolkata timezone
+  const timeZone = "Asia/Kolkata";
 
-  const startDateTime = DateTime.fromFormat(`${req.body.startDate} ${req.body.startTime}`, 'yyyy-MM-dd HH:mm');
-  const endDateTime = DateTime.fromFormat(`${req.body.endDate} ${req.body.endTime}`, 'yyyy-MM-dd HH:mm');
+  const startDateTime = moment.tz(`${startDate} ${startTime}`, 'YYYY-MM-DD HH:mm', timeZone);
+  const endDateTime = moment.tz(`${endDate} ${endTime}`, 'YYYY-MM-DD HH:mm', timeZone);
 
-  const startTimestamp = startDateTime.toMillis();
-  const endTimestamp = endDateTime.toMillis();
-  const now = DateTime.now().toMillis();
-
-  const data = new URLSearchParams({
-    clientId: client_id,
-    accessToken: access_token,
-    lockId: lock_id,
-    keyboardPwdType: keyboard_pwd_type,
-    keyboardPwdName: keyboard_pwd_name,
-    startDate: startTimestamp,
-    endDate: endTimestamp,
-    date: now
-  }).toString();
-
-  const options = {
-    hostname: 'euapi.sciener.com',
-    path: '/v3/keyboardPwd/get',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': data.length
-    }
-  };
-
-  const apiReq = https.request(options, (apiRes) => {
-    let responseData = '';
-    apiRes.on('data', chunk => responseData += chunk);
-    apiRes.on('end', () => {
-      try {
-        const parsed = JSON.parse(responseData);
-        console.log("API Response:", parsed); // Debug line
-
-        if (!parsed.keyboardPwd) {
-          return res.status(400).json({ error: 'keyboardPwd not returned by API', details: parsed });
-        }
-
-        res.json({ keyboardPwd: parsed.keyboardPwd });
-      } catch (err) {
-        console.error('Parse error:', err);
-        res.status(500).json({ error: 'Failed to parse API response' });
-      }
-    });
-  });
-
-  apiReq.on('error', (error) => {
-    console.error('API Error:', error);
-    res.status(500).send('Internal Server Error');
-  });
-
-  apiReq.write(data);
-  apiReq.end();
-});
-
-// Route to send OTP via email
-app.post('/send-otp', (req, res) => {
-  const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
-
-  if (!email || !keyboardPwd || !startDate || !startTime || !endDate || !endTime) {
-    return res.status(400).json({ success: false, message: 'Missing required fields' });
+  if (!startDateTime.isValid() || !endDateTime.isValid() || endDateTime.isSameOrBefore(startDateTime)) {
+    return res.status(400).json({ error: "Invalid time range. Make sure end time is after start time." });
   }
 
+  const startTimestamp = Math.floor(startDateTime.valueOf() / 1000);
+  const endTimestamp = Math.floor(endDateTime.valueOf() / 1000);
+
+  try {
+    const apiResponse = await axios.post('https://euapi.ttlock.com/v3/keyboardPwd/add', null, {
+      params: {
+        clientId: 'YOUR_CLIENT_ID',
+        accessToken: 'YOUR_ACCESS_TOKEN',
+        lockId: 'YOUR_LOCK_ID',
+        keyboardPwdType: 3,
+        startDate: startTimestamp,
+        endDate: endTimestamp,
+        date: Date.now()
+      }
+    });
+
+    const responseData = apiResponse.data;
+
+    if (responseData.keyboardPwd) {
+      res.json({ keyboardPwd: responseData.keyboardPwd });
+    } else {
+      res.status(500).json({ error: "keyboardPwd not returned by API", apiResponse: responseData });
+    }
+  } catch (error) {
+    console.error('API Error:', error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to get keyboardPwd", detail: error.response?.data || error.message });
+  }
+});
+
+// Endpoint to send the keyboard password via email
+app.post('/send-otp', async (req, res) => {
+  const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'YOUR_EMAIL@gmail.com',
+      pass: 'YOUR_EMAIL_PASSWORD'
+    }
+  });
+
   const mailOptions = {
-    from: `"Hotel Booking" <${process.env.GMAIL_USER}>`,
+    from: 'YOUR_EMAIL@gmail.com',
     to: email,
-    subject: 'Your Keyboard Password (OTP)',
-    text: `Hello Sir, Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} is successfully done. Your OTP is: ${keyboardPwd}.`
+    subject: 'Your Smart Lock Keyboard Password',
+    html: `
+      <p>Here is your keyboard password: <strong>${keyboardPwd}</strong></p>
+      <p><strong>Start:</strong> ${startDate} ${startTime}</p>
+      <p><strong>End:</strong> ${endDate} ${endTime}</p>
+    `
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Email error:', error);
-      return res.status(500).json({ success: false, message: 'Failed to send email' });
-    }
-    console.log('Email sent:', info.response);
+  try {
+    await transporter.sendMail(mailOptions);
     res.json({ success: true });
-  });
+  } catch (error) {
+    console.error('Email Error:', error);
+    res.status(500).json({ success: false, message: "Failed to send email", error: error.message });
+  }
 });
 
-// Serve the homepage
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Optional: Handle favicon.ico to avoid 404
-app.get('/favicon.ico', (req, res) => res.status(204).end());
-
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}/`);
 });
 
 
