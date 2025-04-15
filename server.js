@@ -16,9 +16,9 @@ app.post('/submit', async (req, res) => {
   const timeZone = "Asia/Kolkata";  // Ensure this is set to Asia/Kolkata
 
   try {
-    // Parse the dates with the correct timezone
-    const startDateTime = DateTime.fromISO(`${startDate}T${startTime}`, { zone: timeZone });
-    const endDateTime = DateTime.fromISO(`${endDate}T${endTime}`, { zone: timeZone });
+    // Parse the dates with the correct timezone explicitly
+    const startDateTime = DateTime.fromISO(`${startDate}T${startTime}`, { zone: timeZone }).setZone(timeZone);
+    const endDateTime = DateTime.fromISO(`${endDate}T${endTime}`, { zone: timeZone }).setZone(timeZone);
 
     // Log to verify the parsed times are correct
     console.log('Start Date Time:', startDateTime.toISO());
@@ -29,7 +29,7 @@ app.post('/submit', async (req, res) => {
       return res.status(400).json({ error: "Invalid time range. Make sure end time is after start time." });
     }
 
-    // Convert times to Unix timestamps
+    // Convert times to Unix timestamps in Asia/Kolkata timezone
     const startTimestamp = Math.floor(startDateTime.toMillis());
     const endTimestamp = Math.floor(endDateTime.toMillis());
 
@@ -99,6 +99,7 @@ app.post('/send-otp', async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
 });
+
 
 
 
