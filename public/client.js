@@ -28,7 +28,7 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       startDate: startFormatted,
-      startTime: startFormatted,
+      startTime: startFormatted,  // Consider checking if you need both startDate and startTime separately
       endDate: endFormatted,
       endTime: endFormatted
     })
@@ -89,7 +89,6 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
     alert(error.message);
   });
 });
-
 
 
 
