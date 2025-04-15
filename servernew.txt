@@ -65,13 +65,8 @@ app.post('/submit', (req, res) => {
     apiRes.on('end', () => {
       try {
         const parsed = JSON.parse(responseData);
-        console.log("API Response:", parsed); // Debug line
-
-        if (!parsed.keyboardPwd) {
-          return res.status(400).json({ error: 'keyboardPwd not returned by API', details: parsed });
-        }
-
-        res.json({ keyboardPwd: parsed.keyboardPwd });
+        const keyboardPwd = parsed.keyboardPwd;
+        res.json({ keyboardPwd });
       } catch (err) {
         console.error('Parse error:', err);
         res.status(500).json({ error: 'Failed to parse API response' });
@@ -118,14 +113,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Optional: Handle favicon.ico to avoid 404
-app.get('/favicon.ico', (req, res) => res.status(204).end());
-
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
 });
-
-
 
 // ******
 // 

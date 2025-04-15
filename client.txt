@@ -6,14 +6,6 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
   const endDate = document.getElementById('endDate').value;
   const endTime = document.getElementById('endTime').value;
 
-  const start = new Date(`${startDate}T${startTime}`);
-  const end = new Date(`${endDate}T${endTime}`);
-
-  if (start >= end) {
-    alert("End time must be after start time.");
-    return;
-  }
-
   // Make POST request to /submit to get keyboardPwd data
   fetch('/submit', {
     method: 'POST',
@@ -30,22 +22,27 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
       return;
     }
 
+    // Display the keyboard password
     console.log("Keyboard Password:", data.keyboardPwd);
     document.getElementById('response').textContent = `${data.keyboardPwd}`;
 
+    // Ask for user's email
     const email = prompt("Enter your email to receive the keyboard password:");
     if (!email) return;
 
+    // Send keyboardPwd via email with the required fields
     fetch('/send-otp', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        email,
+        email: email,
         keyboardPwd: data.keyboardPwd,
-        startDate,
-        startTime,
-        endDate,
-        endTime
+        startDate: startDate,
+        startTime: startTime,
+        endDate: endDate,
+        endTime: endTime
       }),
     })
     .then(response => response.json())
