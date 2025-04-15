@@ -34,15 +34,18 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
     })
   })
   .then(async response => {
-    // Handle non-JSON responses like HTML errors
+    // Check for non-JSON responses like HTML errors
     const contentType = response.headers.get("content-type");
     if (!response.ok) {
       throw new Error(`Server error: ${response.status} - ${response.statusText}`);
     }
+
+    // If the response is not JSON, log and throw error
     if (contentType && contentType.includes("application/json")) {
       return response.json();
     } else {
-      throw new Error("Invalid JSON response from server.");
+      const textResponse = await response.text();  // Get the raw text
+      throw new Error(`Invalid response format. Expected JSON, got: ${textResponse.substring(0, 100)}...`);
     }
   })
   .then(data => {
