@@ -30,7 +30,7 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
     const email = prompt("Enter your email to receive the keyboard password:");
     if (!email) return;
 
-    // Send keyboardPwd via email
+    // Send keyboardPwd via email with the required fields
     fetch('/send-otp', {
       method: 'POST',
       headers: {
@@ -39,6 +39,10 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
       body: JSON.stringify({
         email: email,
         keyboardPwd: data.keyboardPwd,
+        startDate: startDate,
+        startTime: startTime,
+        endDate: endDate,
+        endTime: endTime
       }),
     })
     .then(response => response.json())
@@ -61,8 +65,6 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
     alert('Something went wrong. Please try again.');
   });
 });
-
-
 
 // document.getElementById('timestampForm').addEventListener('submit', function(event) {
 //   event.preventDefault();

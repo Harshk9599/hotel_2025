@@ -8,42 +8,56 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.json()); // needed to handle JSON payload from client
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Gmail transporter setup using App Password
+// Nodemailer transporter setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  },
+    user: process.env.GMAIL_USER, // your Gmail ID
+    pass: process.env.GMAIL_PASS  // your app password from Google
+  }
 });
 
-// Route to get keyboard password
-app.post('/submit', (req, res) => {
-  const client_id = process.env.CLIENT_ID;
-  const access_token = process.env.ACCESS_TOKEN;
-  const lock_id = process.env.LOCK_ID;
-  const keyboard_pwd_type = '3';
-  const keyboard_pwd_name = 'test1';
+// Send email function
+const sendKeyboardPwdEmail = async (email, keyboardPwd) => {
+  const mailOptions = {
+    from: `"Your Company" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: 'Your Keyboard Password',
+    text: `Your keyboard password is: ${keyboardPwd}`
+  };
 
-  const startDateTime = DateTime.fromFormat(`${req.body.startDate} ${req.body.startTime}`, 'yyyy-MM-dd HH:mm');
-  const endDateTime = DateTime.fromFormat(`${req.body.endDate} ${req.body.endTime}`, 'yyyy-MM-dd HH:mm');
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Email sent to:', email);
+  } catch (err) {
+    console.error('Email send error:', err);
+  }
+};
+
+// Route to get keyboard password and send email
+app.post('/submit', (req, res) => {
+  const { startDate, startTime, endDate, endTime } = req.body;
+
+  const startDateTime = DateTime.fromFormat(`${startDate} ${startTime}`, 'yyyy-MM-dd HH:mm');
+  const endDateTime = DateTime.fromFormat(`${endDate} ${endTime}`, 'yyyy-MM-dd HH:mm');
 
   const startTimestamp = startDateTime.toMillis();
   const endTimestamp = endDateTime.toMillis();
   const now = DateTime.now().toMillis();
 
   const data = new URLSearchParams({
-    clientId: client_id,
-    accessToken: access_token,
-    lockId: lock_id,
-    keyboardPwdType: keyboard_pwd_type,
-    keyboardPwdName: keyboard_pwd_name,
+    clientId: process.env.CLIENT_ID,
+    accessToken: process.env.ACCESS_TOKEN,
+    lockId: process.env.LOCK_ID,
+    keyboardPwdType: '3',
+    keyboardPwdName: 'test1',
     startDate: startTimestamp,
     endDate: endTimestamp,
     date: now
@@ -61,64 +75,64 @@ app.post('/submit', (req, res) => {
 
   const apiReq = https.request(options, (apiRes) => {
     let responseData = '';
-    apiRes.on('data', chunk => responseData += chunk);
+
+    apiRes.on('data', chunk => {
+      responseData += chunk;
+    });
+
     apiRes.on('end', () => {
       try {
         const parsed = JSON.parse(responseData);
         const keyboardPwd = parsed.keyboardPwd;
-        res.json({ keyboardPwd });
-      } catch (err) {
-        console.error('Parse error:', err);
+
+        res.json({ keyboardPwd }); // Send to client
+
+        // Ask for email and send (Client handles this part)
+      } catch (e) {
+        console.error('Failed to parse API response:', e);
         res.status(500).json({ error: 'Failed to parse API response' });
       }
     });
   });
 
-  apiReq.on('error', (error) => {
-    console.error('API Error:', error);
-    res.status(500).send('Internal Server Error');
+  apiReq.on('error', error => {
+    console.error('API request error:', error);
+    res.status(500).json({ error: 'API request error' });
   });
 
   apiReq.write(data);
   apiReq.end();
 });
 
-// Route to send OTP via email
+// Route to send email with keyboardPwd
 app.post('/send-otp', (req, res) => {
-  const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
+  const { email, keyboardPwd } = req.body;
 
-  if (!email || !keyboardPwd || !startDate || !startTime || !endDate || !endTime) {
-    return res.status(400).json({ success: false, message: 'Missing required fields' });
+  if (!email || !keyboardPwd) {
+    return res.status(400).json({ success: false, message: 'Missing email or keyboardPwd' });
   }
 
-  const mailOptions = {
-    from: `"Hotel Booking" <${process.env.GMAIL_USER}>`,
-    to: email,
-    subject: 'Your Keyboard Password (OTP)',
-    text: `Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} is successfully done. Your OTP is: ${keyboardPwd}.`
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Email error:', error);
-      return res.status(500).json({ success: false, message: 'Failed to send email' });
-    }
-    console.log('Email sent:', info.response);
-    res.json({ success: true });
-  });
+  sendKeyboardPwdEmail(email, keyboardPwd)
+    .then(() => res.json({ success: true }))
+    .catch(() => res.status(500).json({ success: false, message: 'Failed to send email' }));
 });
 
-// Serve the homepage
+// Serve main HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
+app.listen(process.env.PORT || port, () => {
+  console.log(`Server running at http://localhost:${port}`);
 });
 
-// ******
-// 
+
+
+
+
+
+
+
 
 // const express = require('express');
 // const bodyParser = require('body-parser');
