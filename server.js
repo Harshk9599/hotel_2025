@@ -1,22 +1,19 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const nodemailer = require('nodemailer');
 const moment = require('moment-timezone');
 const axios = require('axios');
+const nodemailer = require('nodemailer');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = 3000;
 
+app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(express.static('public'));
 
-// Endpoint to get keyboard password
 app.post('/submit', async (req, res) => {
   const { startDate, startTime, endDate, endTime } = req.body;
 
-  // Use Asia/Kolkata timezone
   const timeZone = "Asia/Kolkata";
-
   const startDateTime = moment.tz(`${startDate} ${startTime}`, 'YYYY-MM-DD HH:mm', timeZone);
   const endDateTime = moment.tz(`${endDate} ${endTime}`, 'YYYY-MM-DD HH:mm', timeZone);
 
@@ -24,69 +21,75 @@ app.post('/submit', async (req, res) => {
     return res.status(400).json({ error: "Invalid time range. Make sure end time is after start time." });
   }
 
-  const startTimestamp = Math.floor(startDateTime.valueOf() / 1000);
-  const endTimestamp = Math.floor(endDateTime.valueOf() / 1000);
+  const startTimestamp = startDateTime.valueOf();
+  const endTimestamp = endDateTime.valueOf();
+
+  const accessToken = "YOUR_TTLOCK_ACCESS_TOKEN";
+  const lockId = "YOUR_LOCK_ID";
+  const clientId = "YOUR_CLIENT_ID";
+  const clientSecret = "YOUR_CLIENT_SECRET";
+
+  const apiUrl = `https://euapi.ttlock.com/v3/keyboardPwd/add`;
 
   try {
-    const apiResponse = await axios.post('https://euapi.ttlock.com/v3/keyboardPwd/add', null, {
+    const response = await axios.post(apiUrl, null, {
       params: {
-        clientId: 'YOUR_CLIENT_ID',
-        accessToken: 'YOUR_ACCESS_TOKEN',
-        lockId: 'YOUR_LOCK_ID',
-        keyboardPwdType: 3,
+        clientId: clientId,
+        accessToken: accessToken,
+        lockId: lockId,
+        keyboardPwdType: 2,
         startDate: startTimestamp,
         endDate: endTimestamp,
-        date: Date.now()
-      }
+        date: Date.now(),
+      },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     });
 
-    const responseData = apiResponse.data;
-
-    if (responseData.keyboardPwd) {
-      res.json({ keyboardPwd: responseData.keyboardPwd });
-    } else {
-      res.status(500).json({ error: "keyboardPwd not returned by API", apiResponse: responseData });
+    console.log("API Response:", response.data);
+    if (!response.data.keyboardPwd) {
+      return res.status(500).json({ error: "keyboardPwd not returned by API" });
     }
+
+    res.json({ keyboardPwd: response.data.keyboardPwd });
   } catch (error) {
-    console.error('API Error:', error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to get keyboardPwd", detail: error.response?.data || error.message });
+    console.error("API Error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Error generating password", detail: error.response?.data || error.message });
   }
 });
 
-// Endpoint to send the keyboard password via email
 app.post('/send-otp', async (req, res) => {
   const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
 
-  const transporter = nodemailer.createTransport({
+  let transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'YOUR_EMAIL@gmail.com',
-      pass: 'YOUR_EMAIL_PASSWORD'
-    }
+      user: 'your.email@gmail.com',
+      pass: 'your-app-password',
+    },
   });
 
   const mailOptions = {
-    from: 'YOUR_EMAIL@gmail.com',
+    from: 'your.email@gmail.com',
     to: email,
-    subject: 'Your Smart Lock Keyboard Password',
-    html: `
-      <p>Here is your keyboard password: <strong>${keyboardPwd}</strong></p>
-      <p><strong>Start:</strong> ${startDate} ${startTime}</p>
-      <p><strong>End:</strong> ${endDate} ${endTime}</p>
-    `
+    subject: 'Your TTLock Keyboard Password',
+    text: `Keyboard Password: ${keyboardPwd}
+Start: ${startDate} ${startTime}
+End: ${endDate} ${endTime}`,
   };
 
   try {
     await transporter.sendMail(mailOptions);
     res.json({ success: true });
   } catch (error) {
-    console.error('Email Error:', error);
-    res.status(500).json({ success: false, message: "Failed to send email", error: error.message });
+    console.error("Email Error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}/`);
 });
 
 
