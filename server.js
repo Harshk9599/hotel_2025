@@ -1,104 +1,106 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const { DateTime } = require('luxon');
-const axios = require('axios');
 const nodemailer = require('nodemailer');
+const path = require('path');
+const https = require('https');
+const { URLSearchParams } = require('url');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.post('/submit', async (req, res) => {
+app.post('/submit', (req, res) => {
   const { startDate, startTime, endDate, endTime } = req.body;
 
-  const timeZone = "Asia/Kolkata";  // Ensure this is set to Asia/Kolkata
+  const start = DateTime.fromFormat(`${startDate} ${startTime}`, 'yyyy-MM-dd HH:mm', { zone: 'Asia/Kolkata' });
+  const end = DateTime.fromFormat(`${endDate} ${endTime}`, 'yyyy-MM-dd HH:mm', { zone: 'Asia/Kolkata' });
 
-  try {
-    // Parse the dates with the correct timezone
-    const startDateTime = DateTime.fromISO(`${startDate}T${startTime}`, { zone: timeZone });
-    const endDateTime = DateTime.fromISO(`${endDate}T${endTime}`, { zone: timeZone });
-
-    // Log to verify the parsed times are correct
-    console.log('Start Date Time:', startDateTime.toISO());
-    console.log('End Date Time:', endDateTime.toISO());
-
-    // Validate if the times are correct
-    if (!startDateTime.isValid || !endDateTime.isValid || endDateTime <= startDateTime) {
-      return res.status(400).json({ error: "Invalid time range. Make sure end time is after start time." });
-    }
-
-    // Convert times to Unix timestamps
-    const startTimestamp = Math.floor(startDateTime.toMillis());
-    const endTimestamp = Math.floor(endDateTime.toMillis());
-
-    // API details
-    const accessToken = "YOUR_TTLOCK_ACCESS_TOKEN";
-    const lockId = "YOUR_LOCK_ID";
-    const clientId = "YOUR_CLIENT_ID";
-    const clientSecret = "YOUR_CLIENT_SECRET";
-
-    const apiUrl = `https://euapi.ttlock.com/v3/keyboardPwd/add`;
-
-    const response = await axios.post(apiUrl, null, {
-      params: {
-        clientId: clientId,
-        accessToken: accessToken,
-        lockId: lockId,
-        keyboardPwdType: 2,
-        startDate: startTimestamp,
-        endDate: endTimestamp,
-        date: Date.now(),
-      },
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-
-    console.log("API Response:", response.data);
-
-    if (!response.data.keyboardPwd) {
-      return res.status(500).json({ error: "keyboardPwd not returned by API" });
-    }
-
-    res.json({ keyboardPwd: response.data.keyboardPwd });
-  } catch (error) {
-    console.error("API Error:", error.response?.data || error.message);
-    res.status(500).json({ error: "Error generating password", detail: error.response?.data || error.message });
+  if (!start.isValid || !end.isValid || end <= start) {
+    return res.status(400).json({ error: "Invalid time range" });
   }
+
+  const params = new URLSearchParams({
+    clientId: process.env.CLIENT_ID,
+    accessToken: process.env.ACCESS_TOKEN,
+    lockId: process.env.LOCK_ID,
+    keyboardPwdType: '3',
+    keyboardPwdName: 'Auto Generated',
+    startDate: start.toMillis().toString(),
+    endDate: end.toMillis().toString(),
+    date: DateTime.now().setZone('Asia/Kolkata').toMillis().toString()
+  });
+
+  const options = {
+    hostname: 'euapi.sciener.com',
+    path: '/v3/keyboardPwd/get',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': params.toString().length
+    }
+  };
+
+  const apiReq = https.request(options, apiRes => {
+    let data = '';
+    apiRes.on('data', chunk => data += chunk);
+    apiRes.on('end', () => {
+      try {
+        const parsed = JSON.parse(data);
+        if (!parsed.keyboardPwd) {
+          return res.status(500).json({ error: "No keyboardPwd returned", apiResponse: parsed });
+        }
+        res.json({ keyboardPwd: parsed.keyboardPwd });
+      } catch (err) {
+        res.status(500).json({ error: "Error parsing response", detail: err.message });
+      }
+    });
+  });
+
+  apiReq.on('error', error => {
+    console.error("Request Error:", error);
+    res.status(500).json({ error: "Internal Server Error", detail: error.message });
+  });
+
+  apiReq.write(params.toString());
+  apiReq.end();
 });
 
 app.post('/send-otp', async (req, res) => {
   const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
 
-  let transporter = nodemailer.createTransport({
+  const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'your.email@gmail.com',
-      pass: 'your-app-password',
-    },
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
   });
 
   const mailOptions = {
-    from: 'your.email@gmail.com',
+    from: process.env.EMAIL_USER,
     to: email,
     subject: 'Your TTLock Keyboard Password',
-    text: `Keyboard Password: ${keyboardPwd}\nStart: ${startDate} ${startTime}\nEnd: ${endDate} ${endTime}`,
+    text: `Here is your keyboard password: ${keyboardPwd}\nValid from ${startDate} ${startTime} to ${endDate} ${endTime}`
   };
 
   try {
     await transporter.sendMail(mailOptions);
     res.json({ success: true });
   } catch (error) {
-    console.error("Email Error:", error.message);
+    console.error("Email Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
+  console.log(`Server running on http://localhost:${port}`);
 });
+
 
 
 
