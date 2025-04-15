@@ -9,23 +9,35 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
   const endTime = document.getElementById('endTime').value;
 
   // Convert to ISO string manually in Asia/Kolkata timezone
-  const start = new Date(`${startDate}T${startTime}`);
-  const end = new Date(`${endDate}T${endTime}`);
+  const start = new Date(`${startDate}T${startTime}:00+05:30`);  // Using +05:30 for Kolkata timezone
+  const end = new Date(`${endDate}T${endTime}:00+05:30`);  // Using +05:30 for Kolkata timezone
 
+  // Check if end time is after start time
   if (start >= end) {
     alert("End time must be after start time.");
     return;
   }
 
+  // Log the times being sent
+  console.log("Start Time:", start);
+  console.log("End Time:", end);
+
+  // Make POST request to /submit
   fetch(`${API_BASE}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ startDate, startTime, endDate, endTime })
+    body: new URLSearchParams({
+      startDate,
+      startTime,
+      endDate,
+      endTime
+    })
   })
   .then(async response => {
+    // Handle non-JSON responses like HTML errors
     const contentType = response.headers.get("content-type");
     if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+      throw new Error(`Server error: ${response.status} - ${response.statusText}`);
     }
     if (contentType && contentType.includes("application/json")) {
       return response.json();
@@ -34,17 +46,20 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
     }
   })
   .then(data => {
+    // Handle the response data
     if (data.error || !data.keyboardPwd) {
       console.error('Server Error:', data.error || 'No keyboard password returned.');
       alert('Failed to generate keyboard password. Please try again.');
       return;
     }
 
+    console.log("Keyboard Password:", data.keyboardPwd);
     document.getElementById('response').textContent = `${data.keyboardPwd}`;
 
     const email = prompt("Enter your email to receive the keyboard password:");
     if (!email) return;
 
+    // Send email with OTP
     fetch(`${API_BASE}/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -72,7 +87,7 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
   })
   .catch(error => {
     console.error('Client Error:', error);
-    alert(error.message);
+    alert(`Error: ${error.message}`);
   });
 });
 
