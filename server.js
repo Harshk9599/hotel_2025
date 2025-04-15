@@ -1,10 +1,10 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const moment = require('moment-timezone');
+const { DateTime } = require('luxon');
 const axios = require('axios');
 const nodemailer = require('nodemailer');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -14,24 +14,25 @@ app.post('/submit', async (req, res) => {
   const { startDate, startTime, endDate, endTime } = req.body;
 
   const timeZone = "Asia/Kolkata";
-  const startDateTime = moment.tz(`${startDate} ${startTime}`, 'YYYY-MM-DD HH:mm', timeZone);
-  const endDateTime = moment.tz(`${endDate} ${endTime}`, 'YYYY-MM-DD HH:mm', timeZone);
-
-  if (!startDateTime.isValid() || !endDateTime.isValid() || endDateTime.isSameOrBefore(startDateTime)) {
-    return res.status(400).json({ error: "Invalid time range. Make sure end time is after start time." });
-  }
-
-  const startTimestamp = startDateTime.valueOf();
-  const endTimestamp = endDateTime.valueOf();
-
-  const accessToken = "YOUR_TTLOCK_ACCESS_TOKEN";
-  const lockId = "YOUR_LOCK_ID";
-  const clientId = "YOUR_CLIENT_ID";
-  const clientSecret = "YOUR_CLIENT_SECRET";
-
-  const apiUrl = `https://euapi.ttlock.com/v3/keyboardPwd/add`;
 
   try {
+    const startDateTime = DateTime.fromISO(`${startDate}T${startTime}`, { zone: timeZone });
+    const endDateTime = DateTime.fromISO(`${endDate}T${endTime}`, { zone: timeZone });
+
+    if (!startDateTime.isValid || !endDateTime.isValid || endDateTime <= startDateTime) {
+      return res.status(400).json({ error: "Invalid time range. Make sure end time is after start time." });
+    }
+
+    const startTimestamp = Math.floor(startDateTime.toMillis());
+    const endTimestamp = Math.floor(endDateTime.toMillis());
+
+    const accessToken = "YOUR_TTLOCK_ACCESS_TOKEN";
+    const lockId = "YOUR_LOCK_ID";
+    const clientId = "YOUR_CLIENT_ID";
+    const clientSecret = "YOUR_CLIENT_SECRET";
+
+    const apiUrl = `https://euapi.ttlock.com/v3/keyboardPwd/add`;
+
     const response = await axios.post(apiUrl, null, {
       params: {
         clientId: clientId,
@@ -48,6 +49,7 @@ app.post('/submit', async (req, res) => {
     });
 
     console.log("API Response:", response.data);
+
     if (!response.data.keyboardPwd) {
       return res.status(500).json({ error: "keyboardPwd not returned by API" });
     }
@@ -74,9 +76,7 @@ app.post('/send-otp', async (req, res) => {
     from: 'your.email@gmail.com',
     to: email,
     subject: 'Your TTLock Keyboard Password',
-    text: `Keyboard Password: ${keyboardPwd}
-Start: ${startDate} ${startTime}
-End: ${endDate} ${endTime}`,
+    text: `Keyboard Password: ${keyboardPwd}\nStart: ${startDate} ${startTime}\nEnd: ${endDate} ${endTime}`,
   };
 
   try {
