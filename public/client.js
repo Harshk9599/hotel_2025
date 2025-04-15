@@ -8,39 +8,36 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
   const endDate = document.getElementById('endDate').value;
   const endTime = document.getElementById('endTime').value;
 
-  // Convert to ISO string manually in Asia/Kolkata timezone
-  const start = new Date(`${startDate}T${startTime}:00+05:30`);  // Using +05:30 for Kolkata timezone
-  const end = new Date(`${endDate}T${endTime}:00+05:30`);  // Using +05:30 for Kolkata timezone
+  // Convert input time to moment object in Asia/Kolkata timezone
+  const start = moment.tz(`${startDate} ${startTime}`, "YYYY-MM-DD HH:mm", "Asia/Kolkata");
+  const end = moment.tz(`${endDate} ${endTime}`, "YYYY-MM-DD HH:mm", "Asia/Kolkata");
 
   // Check if end time is after start time
-  if (start >= end) {
+  if (start.isSameOrAfter(end)) {
     alert("End time must be after start time.");
     return;
   }
 
-  // Log the times being sent
-  console.log("Start Time:", start);
-  console.log("End Time:", end);
+  // Prepare the body for the POST request
+  const startFormatted = start.format();  // ISO 8601 format
+  const endFormatted = end.format();      // ISO 8601 format
 
   // Make POST request to /submit
   fetch(`${API_BASE}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      startDate,
-      startTime,
-      endDate,
-      endTime
+      startDate: startFormatted,
+      startTime: startFormatted,
+      endDate: endFormatted,
+      endTime: endFormatted
     })
   })
   .then(async response => {
-    // Check for non-JSON responses like HTML errors
     const contentType = response.headers.get("content-type");
     if (!response.ok) {
       throw new Error(`Server error: ${response.status} - ${response.statusText}`);
     }
-
-    // If the response is not JSON, log and throw error
     if (contentType && contentType.includes("application/json")) {
       return response.json();
     } else {
@@ -49,7 +46,6 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
     }
   })
   .then(data => {
-    // Handle the response data
     if (data.error || !data.keyboardPwd) {
       console.error('Server Error:', data.error || 'No keyboard password returned.');
       alert('Failed to generate keyboard password. Please try again.');
@@ -69,10 +65,10 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
       body: JSON.stringify({
         email,
         keyboardPwd: data.keyboardPwd,
-        startDate,
-        startTime,
-        endDate,
-        endTime
+        startDate: startFormatted,
+        startTime: startFormatted,
+        endDate: endFormatted,
+        endTime: endFormatted
       }),
     })
     .then(response => response.json())
@@ -90,7 +86,7 @@ document.getElementById('timestampForm').addEventListener('submit', function(eve
   })
   .catch(error => {
     console.error('Client Error:', error);
-    alert(`Error: ${error.message}`);
+    alert(error.message);
   });
 });
 

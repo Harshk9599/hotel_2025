@@ -13,19 +13,27 @@ app.use(bodyParser.json());
 app.post('/submit', async (req, res) => {
   const { startDate, startTime, endDate, endTime } = req.body;
 
-  const timeZone = "Asia/Kolkata";
+  const timeZone = "Asia/Kolkata";  // Ensure this is set to Asia/Kolkata
 
   try {
+    // Parse the dates with the correct timezone
     const startDateTime = DateTime.fromISO(`${startDate}T${startTime}`, { zone: timeZone });
     const endDateTime = DateTime.fromISO(`${endDate}T${endTime}`, { zone: timeZone });
 
+    // Log to verify the parsed times are correct
+    console.log('Start Date Time:', startDateTime.toISO());
+    console.log('End Date Time:', endDateTime.toISO());
+
+    // Validate if the times are correct
     if (!startDateTime.isValid || !endDateTime.isValid || endDateTime <= startDateTime) {
       return res.status(400).json({ error: "Invalid time range. Make sure end time is after start time." });
     }
 
+    // Convert times to Unix timestamps
     const startTimestamp = Math.floor(startDateTime.toMillis());
     const endTimestamp = Math.floor(endDateTime.toMillis());
 
+    // API details
     const accessToken = "YOUR_TTLOCK_ACCESS_TOKEN";
     const lockId = "YOUR_LOCK_ID";
     const clientId = "YOUR_CLIENT_ID";
