@@ -100,7 +100,7 @@ app.post('/send-otp', (req, res) => {
     from: `"Hotel Booking" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: 'Your Keyboard Password (OTP)',
-    text: `Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} is successfully done. Your OTP is: ${keyboardPwd}.`
+    text: `Hello Sir, Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} is successfully done. Your OTP is: ${keyboardPwd}.`
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
