@@ -1,39 +1,67 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const { DateTime } = require('luxon');
-const nodemailer = require('nodemailer');
-const path = require('path');
 const https = require('https');
 const { URLSearchParams } = require('url');
+const { DateTime } = require('luxon');
+const path = require('path');
+const nodemailer = require('nodemailer');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.json()); // needed to handle JSON payload from client
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Nodemailer transporter setup
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER, // your Gmail ID
+    pass: process.env.GMAIL_PASS  // your app password from Google
+  }
+});
+
+// Send email function
+const sendKeyboardPwdEmail = async (email, keyboardPwd) => {
+  const mailOptions = {
+    from: `"Your Company" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: 'Your Keyboard Password',
+    text: `Your keyboard password is: ${keyboardPwd}`
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Email sent to:', email);
+  } catch (err) {
+    console.error('Email send error:', err);
+  }
+};
+
+// Route to get keyboard password and send email
 app.post('/submit', (req, res) => {
   const { startDate, startTime, endDate, endTime } = req.body;
 
-  const start = DateTime.fromFormat(`${startDate} ${startTime}`, 'yyyy-MM-dd HH:mm', { zone: 'Asia/Kolkata' });
-  const end = DateTime.fromFormat(`${endDate} ${endTime}`, 'yyyy-MM-dd HH:mm', { zone: 'Asia/Kolkata' });
+  const startDateTime = DateTime.fromFormat(`${startDate} ${startTime}`, 'yyyy-MM-dd HH:mm');
+  const endDateTime = DateTime.fromFormat(`${endDate} ${endTime}`, 'yyyy-MM-dd HH:mm');
 
-  if (!start.isValid || !end.isValid || end <= start) {
-    return res.status(400).json({ error: "Invalid time range" });
-  }
+  const startTimestamp = startDateTime.toMillis();
+  const endTimestamp = endDateTime.toMillis();
+  const now = DateTime.now().toMillis();
 
-  const params = new URLSearchParams({
+  const data = new URLSearchParams({
     clientId: process.env.CLIENT_ID,
     accessToken: process.env.ACCESS_TOKEN,
     lockId: process.env.LOCK_ID,
     keyboardPwdType: '3',
-    keyboardPwdName: 'Auto Generated',
-    startDate: start.toMillis().toString(),
-    endDate: end.toMillis().toString(),
-    date: DateTime.now().setZone('Asia/Kolkata').toMillis().toString()
-  });
+    keyboardPwdName: 'test1',
+    startDate: startTimestamp,
+    endDate: endTimestamp,
+    date: now
+  }).toString();
 
   const options = {
     hostname: 'euapi.sciener.com',
@@ -41,65 +69,64 @@ app.post('/submit', (req, res) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': params.toString().length
+      'Content-Length': data.length
     }
   };
 
-  const apiReq = https.request(options, apiRes => {
-    let data = '';
-    apiRes.on('data', chunk => data += chunk);
+  const apiReq = https.request(options, (apiRes) => {
+    let responseData = '';
+
+    apiRes.on('data', chunk => {
+      responseData += chunk;
+    });
+
     apiRes.on('end', () => {
       try {
-        const parsed = JSON.parse(data);
-        if (!parsed.keyboardPwd) {
-          return res.status(500).json({ error: "No keyboardPwd returned", apiResponse: parsed });
-        }
-        res.json({ keyboardPwd: parsed.keyboardPwd });
-      } catch (err) {
-        res.status(500).json({ error: "Error parsing response", detail: err.message });
+        const parsed = JSON.parse(responseData);
+        const keyboardPwd = parsed.keyboardPwd;
+
+        res.json({ keyboardPwd }); // Send to client
+
+        // Ask for email and send (Client handles this part)
+      } catch (e) {
+        console.error('Failed to parse API response:', e);
+        res.status(500).json({ error: 'Failed to parse API response' });
       }
     });
   });
 
   apiReq.on('error', error => {
-    console.error("Request Error:", error);
-    res.status(500).json({ error: "Internal Server Error", detail: error.message });
+    console.error('API request error:', error);
+    res.status(500).json({ error: 'API request error' });
   });
 
-  apiReq.write(params.toString());
+  apiReq.write(data);
   apiReq.end();
 });
 
-app.post('/send-otp', async (req, res) => {
-  const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
+// Route to send email with keyboardPwd
+app.post('/send-otp', (req, res) => {
+  const { email, keyboardPwd } = req.body;
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    }
-  });
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'Your TTLock Keyboard Password',
-    text: `Here is your keyboard password: ${keyboardPwd}\nValid from ${startDate} ${startTime} to ${endDate} ${endTime}`
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Email Error:", error);
-    res.status(500).json({ success: false, message: error.message });
+  if (!email || !keyboardPwd) {
+    return res.status(400).json({ success: false, message: 'Missing email or keyboardPwd' });
   }
+
+  sendKeyboardPwdEmail(email, keyboardPwd)
+    .then(() => res.json({ success: true }))
+    .catch(() => res.status(500).json({ success: false, message: 'Failed to send email' }));
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+// Serve main HTML
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+app.listen(process.env.PORT || port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
+
+
 
 
 
