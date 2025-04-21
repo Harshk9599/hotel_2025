@@ -25,12 +25,12 @@ const transporter = nodemailer.createTransport({
 });
 
 // Send email
-const sendKeyboardPwdEmail = async (email, keyboardPwd, startDate, startTime, endDate, endTime) => {
+const sendKeyboardPwdEmail = async (email, keyboardPwd) => {
   const mailOptions = {
     from: `"Your Company" <${process.env.GMAIL_USER}>`,
     to: email,
-    subject: 'Your Hotel Room OTP',
-    text: `Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} was done successfully. Here is your OTP for your room: ${keyboardPwd}`
+    subject: 'Your Keyboard Password',
+    text: `Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} done sucessfully. Here is your OTP for your room: ${keyboardPwd}`
   };
 
   try {
@@ -38,7 +38,6 @@ const sendKeyboardPwdEmail = async (email, keyboardPwd, startDate, startTime, en
     console.log('Email sent to:', email);
   } catch (err) {
     console.error('Email send error:', err);
-    throw err;
   }
 };
 
@@ -114,13 +113,13 @@ app.post('/submit', (req, res) => {
 
 // Email sender endpoint
 app.post('/send-otp', (req, res) => {
-  const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
+  const { email, keyboardPwd } = req.body;
 
-  if (!email || !keyboardPwd || !startDate || !startTime || !endDate || !endTime) {
-    return res.status(400).json({ success: false, message: 'Missing required fields' });
+  if (!email || !keyboardPwd) {
+    return res.status(400).json({ success: false, message: 'Missing email or keyboardPwd' });
   }
 
-  sendKeyboardPwdEmail(email, keyboardPwd, startDate, startTime, endDate, endTime)
+  sendKeyboardPwdEmail(email, keyboardPwd)
     .then(() => res.json({ success: true }))
     .catch(() => res.status(500).json({ success: false, message: 'Failed to send email' }));
 });
@@ -132,6 +131,9 @@ app.get('/', (req, res) => {
 app.listen(process.env.PORT || port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
+
+
+
 
 
 
