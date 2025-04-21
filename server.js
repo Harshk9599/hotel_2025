@@ -30,7 +30,7 @@ const sendKeyboardPwdEmail = async (email, keyboardPwd) => {
     from: `"Your Company" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: 'Your Keyboard Password',
-    text: `Your keyboard password is: ${keyboardPwd}`
+    text: `Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} done sucessfully. Here is your OTP for your room: ${keyboardPwd}`
   };
 
   try {
