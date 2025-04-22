@@ -1,147 +1,677 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hotel Booking</title>
+
     <!-- Moment.js -->
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 
     <!-- Moment-Timezone -->
     <script src="https://cdn.jsdelivr.net/npm/moment-timezone@0.5.43/builds/moment-timezone-with-data.min.js"></script>
 
+    
     <style>
-        .hotel-container {
-            display: flex;
-            justify-content: space-evenly;
-            margin-bottom: 20px;
-        }
+      /* Existing styles ... */
+      #header {
+        display: flex;
+        justify-content: center;
+      }
+      #header h1 {
+        font-style: italic;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 107, 255, 1) 0%,
+          rgba(0, 0, 0, 1) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text; /* For Firefox */
+        color: transparent;
+      }
+      .navbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 107, 255, 1) 0%,
+          rgba(0, 0, 0, 1) 100%
+        );
+        padding: 10px 20px;
+        position: relative;
+        top: 0;
+        z-index: 1000;
+      }
+      .logo img {
+        width: 200px;
+      }
+      .dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .dropbtn {
+        background-color: #333;
+        color: white;
+        padding: 10px;
+        font-size: 16px;
+        border: none;
+        cursor: pointer;
+      }
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f9f9f9;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+      }
+      .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+      }
+      .dropdown-content a:hover {
+        background-color: #f1f1f1;
+      }
+      .dropdown:hover .dropdown-content {
+        display: block;
+      }
+      .dropdown:hover .dropbtn {
+        background-color: #555;
+      }
+      /* .input-container {
+        background: linear-gradient(135deg, #ffffff, #f2f2f2);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        padding: 2rem;
+        width: 100%;
+        max-width: 500px;
+        margin: auto;
+      }
+      .input-field {
+        margin-bottom: 1.5rem;
+      }
+      .input-field label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #333;
+      }
+      .input-field input {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 12px;
+        outline: none;
+        transition: border 0.3s ease;
+      }
+      .input-field input:focus {
+        border-color: #7f5af0;
+        box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.2);
+      }
+      .submit-btn {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(to right, #7f5af0, #00c6ff);
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      .submit-btn:hover {
+        background: linear-gradient(to right, #5c3dc5, #00a4cc);
+      } */
+      .choose-city h1 {
+        display: flex;
+        justify-content: center;
+        font-style: italic;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 107, 255, 1) 0%,
+          rgba(0, 0, 0, 1) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text; /* For Firefox */
+        color: transparent;
+      }
+      .city1 img,
+      .city2 img {
+        width: 500px;
+        border-radius: 30px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      .cities {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+      }
+      .city1 button,
+      .city2 button {
+        border: none;
+        background: transparent;
+        padding: 0;
+        cursor: pointer;
+      }
+      .city1 button:hover img,
+      .city2 button:hover img {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      }
+      .hotels {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 20px;
+        background: linear-gradient(
+          180deg,
+          rgba(36, 74, 162, 1) 0%,
+          rgba(255, 255, 255, 1) 100%
+        );
+        padding: 50px;
+        border-radius: 50px;
+      }
+      #delhi-hotels h1 {
+        display: flex;
+        justify-content: center;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 107, 255, 1) 0%,
+          rgba(0, 0, 0, 1) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text; /* For Firefox */
+        color: transparent;
+      }
+      .dh1 img,
+      .dh2 img,
+      .dh3 img {
+        transition: transform 0.5s ease, box-shadow 0.5s ease;
+        border-radius: 30px;
+        width: 350px;
+      }
+      .dh1:hover img,
+      .dh2:hover img,
+      .dh3:hover img {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+      }
+      #mumbai-hotels h1 {
+        display: flex;
+        justify-content: center;
+      }
+      .mumbai-hotels {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(36, 74, 162, 1) 100%
+        );
+      }
+      .first-hotel-container,
+      .second-hotel-container {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        background: linear-gradient(
+          180deg,
+          rgba(42, 123, 155, 1) 0%,
+          rgba(255, 255, 255, 1) 100%
+        );
+        padding: 20px 0;
+      }
+      .room1 img,
+      .room2 img,
+      .room3 img,
+      .room4 img,
+      .room5 img,
+      .room6 img,
+      .room7 img,
+      .room8 img,
+      .room9 img,
+      .room10 img,
+      .room11 img,
+      .room12 img
+      {
+           
+        width: 300px;
+      }
+      .room3 img,
+      .room6 img {
+        height: 380px;
+      }
+      .room1 button:hover img,
+      .room2 button:hover img,
+      .room3 button:hover img,
+      .room4 button:hover img,
+      .room5 button:hover img,
+      .room6 button:hover img {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
 
-        .hotel-container img {
-            /* width: 100px; */
-            width: 40%;
-            height: 300px;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
+      /* Hide sections by default to remove extra space */
+      #delhi-hotels,
+      #dh1-rooms,
+      #dh2-rooms {
+        display: none;
+      }
+      /* Show when .show is applied */
+      #delhi-hotels.show,
+      #dh1-rooms.show,
+      #dh2-rooms.show {
+        display: block; /* or use flex if you prefer */
+      }
+      .mumbai-hotels {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+      }
+      /* ===== add to your existing <style> ===== */
+/* Hide Mumbai sections by default */
+#mumbai-hotels,
+#mh1-rooms,
+#mh2-rooms {
+  display: none;
+}
 
-        .hotel-container img:hover {
-            transform: scale(1.1);
-        }
-
-        .selected-hotel {
-            border: 3px solid blue;
-        }
-
-        #timestampForm {
-            display: flex;
-
-            /* flex-direction: column; */
-        }
-
-        #timestampForm label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 15%;
-            margin: 0px 10px;
-        }
-
-        #timestampForm input {
+/* Show when .show is applied */
+#mumbai-hotels.show,
+#mh1-rooms.show,
+#mh2-rooms.show {
+  display: block; /* or flex, if you prefer */
+}
+.mh1 img,
+.mh2 img
+{
+  width: 300px;
+}
 
 
 
-            display: flex;
-            align-items: center;
-            justify-content: space-evenly;
-            width: 33%;
-            margin: 0px 10px;
-        }
+/* 1) Container */
+#form {
+  background: linear-gradient(135deg, #ffffff, #f2f2f2);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  margin: auto;
+}
 
-        #passcod {
-            display: flex;
-            margin: 10px;
-            /* flex-direction: column; */
-        }
+/* 2) Labels */
+#timestampForm label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
 
-        #response {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: larger;
-            font-weight: 600;
-            background-color: antiquewhite;
-            border: 2px solid black;
-            border-radius: 12px;
-            margin: 0px 10px;
-            width: 15%;
-        }
+/* 3) Inputs */
+#timestampForm input {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  outline: none;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+#timestampForm input:focus {
+  border-color: #7f5af0;
+  box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.2);
+}
+
+/* 4) Submit button */
+#btn {
+  display: block;
+  width: 15%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(to right, #7f5af0, #00c6ff);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  margin-top: 1rem; /* give a little breathing room above */
+  margin: auto;
+}
+
+#btn:hover {
+  background: linear-gradient(to right, #5c3dc5, #00a4cc);
+}
+
+
+
+
     </style>
-</head>
+  </head>
+  <body>
+    <!-- heading -->
+    <div id="header"><h1>LAVNA LOCKS</h1></div>
 
-<body>
-
-
-
-    <!-- <h1>Timestamp Converter</h1> -->
-    <h1>Hotel Booking</h1>
-    <div id="hotel-selection">
-        <h2>Select a Hotel</h2>
-        <div class="hotel-container">
-            <!-- <img id="hotel1" src="/hotel1.jpg" alt="Hotel 1" onclick="selectHotel('hotel1')" /> -->
-            <!-- <img id="hotel2" src="/hotel2.jpg" alt="Hotel 2" onclick="selectHotel('hotel2')" /> -->
-            <img id="hotel1"
-                src="https://images.pexels.com/photos/1375383/pexels-photo-1375383.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
-                alt="Hotel 1" onclick="selectHotel('hotel1')" />
-            <img id="hotel2"
-                src="https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
-                alt="Hotel 2" onclick="selectHotel('hotel2')" />
+    <!-- navbar -->
+    <nav class="navbar">
+      <div class="logo"><img src="./assets/brand-logo.png" alt="Logo" /></div>
+      <div class="dropdown">
+        <button class="dropbtn">Choose a City</button>
+        <div class="dropdown-content">
+          <a href="#delhi">Delhi</a>
+          <a href="#mumbai">Mumbai</a>
         </div>
-        <div id="price">Price: </div>
-    </div>
+      </div>
+    </nav>
 
-    <div id="form">
+    <!-- details by customer -->
+    <section>
+      <div id="form">
         <form id="timestampForm">
             <label for="startDate">Start Date:</label>
             <input type="date" id="startDate" name="startDate"><br>
             <label for="startTime">Start Time:</label>
-            <input type="time" id="startTime" name="startTime"><br>
+            <input type="time" id="startTime" name="startTime" step="3600" onchange="roundTime(this)"><br>
             <label for="endDate">End Date:</label>
             <input type="date" id="endDate" name="endDate"><br>
             <label for="endTime">End Time:</label>
-            <input type="time" id="endTime" name="endTime"><br>
-            <button type="submit" id="btn">Submit</button>
+            <input type="time" id="endTime" name="endTime" step="3600" onchange="roundTime(this)"><br>
         </form>
     </div>
-    <!-- Inside index_new.html -->
-    <div id="passcod">
-        <h1>OTP is :-</h1>
-        <div id="response"></div>
+    </section>
+
+    <!-- city -->
+    <div class="choose-city">
+      <h1>CHOOSE A CITY</h1>
     </div>
 
+    <div id="city-container">
+      <div class="cities">
+        <div class="city1">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/delhi.png?v=1745308139" alt="Delhi" /></button>
+        </div>
+        <div class="city2">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/mumbai.png?v=1745308139" alt="Mumbai" /></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- delhi-hotels section -->
+    <div id="delhi-hotels">
+      <h1>HOTELS IN DELHI</h1>
+      <div class="hotels">
+        <div class="dh1">
+          <button id="dh1Btn">
+            <img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/dh1.png?v=1745308139" alt="Hotel 1" />
+          </button>
+        </div>
+        <div class="dh2">
+          <button id="dh2Btn">
+            <img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/dh2.png?v=1745308139" alt="Hotel 2" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- dh1 rooms section -->
+    <div id="dh1-rooms">
+      <div class="first-hotel-container">
+        <div class="room1">
+          
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/City-Park-room1.png?v=1745308139" alt="Room 1" /></button>
+        </div>
+        <div class="room2">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/City-park-room2.png?v=1745308139" alt="Room 2" /></button>
+        </div>
+        <div class="room3">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/City-park-room3.png?v=1745308139" alt="Room 3" /></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- dh2 rooms section -->
+    <div id="dh2-rooms">
+      <div class="second-hotel-container">
+        <div class="room4">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/oasis-room1.png?v=1745308138" alt="Room 1" /></button>
+        </div>
+        <div class="room5">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/oasisi-room2.png?v=1745308139" alt="Room 2" /></button>
+        </div>
+        <div class="room6">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/oasis-room3.png?v=1745308139" alt="Room 3" /></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- mumbai-hotels section -->
+    <div id="mumbai-hotels">
+      <h1>HOTELS IN MUMBAI</h1>
+      <div class="mumbai-hotels">
+        <div class="mh1">
+          <button>
+            <img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/mh1.png?v=1745308139" alt="Mumbai Hotel 1" />
+          </button>
+        </div>
+        <div class="mh2">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/mh2.png?v=1745308139" alt="Mumbai Hotel 2" /></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mh1-rooms">
+      <div class="first-hotel-container">
+        <div class="room7">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/hilton-mumbai-room1.png?v=1745308139" alt="Room 1" /></button>
+        </div>
+        <div class="room8">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/hilton-mumbai-room2.png?v=1745308139" alt="Room 2" /></button>
+        </div>
+        <div class="room9">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/hilton-room3.png?v=1745308139" alt="Room 3" /></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mh2-rooms">
+      <div class="first-hotel-container">
+        <div class="room10">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/taj-room1.png?v=1745308138" alt="Room 1" /></button>
+        </div>
+        <div class="room11">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/taj-room2.png?v=1745308139" alt="Room 2" /></button>
+        </div>
+        <div class="room12">
+          <button><img src="https://cdn.shopify.com/s/files/1/0732/9080/9596/files/taj-room3.png?v=1745308139" alt="Room 3" /></button>
+        </div>
+      </div>
+    </div>
+    <!-- <div id="price">Price: </div> -->
+
+    <div>
+        <button type="submit" id="btn" form="timestampForm">Submit</button>
+        <div id="passcod">
+            <h1>OTP is :-</h1>
+            <div id="response"></div>
+        </div>
+  </div>
+
+  
     <script>
-        function selectHotel(hotelId) {
-            document.getElementById("hotelSelected").value = hotelId;
+      document.addEventListener("DOMContentLoaded", () => {
+        const city1Button = document.querySelector(".city1 button");
+        const city2Button = document.querySelector(".city2 button");
+      
+        const delhiHotels = document.getElementById("delhi-hotels");
+        const dh1Rooms   = document.getElementById("dh1-rooms");
+        const dh2Rooms   = document.getElementById("dh2-rooms");
+      
+        const mumbaiHotels = document.getElementById("mumbai-hotels");
+        const mh1Rooms     = document.getElementById("mh1-rooms");
+        const mh2Rooms     = document.getElementById("mh2-rooms");
+      
+        const dh1Button = document.getElementById("dh1Btn");
+        const dh2Button = document.getElementById("dh2Btn");
+      
+        const mh1Button = document.querySelector(".mh1 button");
+        const mh2Button = document.querySelector(".mh2 button");
+      
+        // Delhi button → show Delhi, hide Mumbai & all rooms
+        city1Button.addEventListener("click", () => {
+          delhiHotels.classList.add("show");
+          mumbaiHotels.classList.remove("show");
+      
+          dh1Rooms.classList.remove("show");
+          dh2Rooms.classList.remove("show");
+          mh1Rooms.classList.remove("show");
+          mh2Rooms.classList.remove("show");
+        });
+      
+        // Mumbai button → show Mumbai, hide Delhi & all rooms
+        city2Button.addEventListener("click", () => {
+          mumbaiHotels.classList.add("show");
+          delhiHotels.classList.remove("show");
+      
+          dh1Rooms.classList.remove("show");
+          dh2Rooms.classList.remove("show");
+          mh1Rooms.classList.remove("show");
+          mh2Rooms.classList.remove("show");
+        });
+      
+        // Delhi hotel → toggle its rooms
+        dh1Button.addEventListener("click", () => {
+          dh1Rooms.classList.add("show");
+          dh2Rooms.classList.remove("show");
+        });
+        dh2Button.addEventListener("click", () => {
+          dh2Rooms.classList.add("show");
+          dh1Rooms.classList.remove("show");
+        });
+      
+        // Mumbai hotel → toggle its rooms
+        mh1Button.addEventListener("click", () => {
+          mh1Rooms.classList.add("show");
+          mh2Rooms.classList.remove("show");
+        });
+        mh2Button.addEventListener("click", () => {
+          mh2Rooms.classList.add("show");
+          mh1Rooms.classList.remove("show");
+        });
+      });
 
-            // Update price based on selected hotel
-            var pricePerNight = hotelId === "hotel1" ? 100 : 150; // Adjust prices as needed
-            document.getElementById("pricePerNight").value = pricePerNight;
-            document.getElementById("price").textContent = "Price: $" + pricePerNight;
 
-            // Show date-time selection
-            document.getElementById("datetime-selection").style.display = "block";
+  document.addEventListener("DOMContentLoaded", () => {
+    // **1. Globals**
+    let price     = 0;
+    let hotelName = "";
+
+    // **2. Helper to set both at once**
+    function selectRoom(p, hotel) {
+      price     = p;
+      hotelName = hotel;
+      console.log(`Selected: ${hotelName} @ ₹${price}`);
+      // Optionally show on the page:
+      // document.getElementById("summary").textContent =
+      //   `Hotel: ${hotelName}, Price: ₹${price}`;
+    }
+
+    // **3. Map each room button to its price & hotel**
+    const roomMappings = [
+      { selector: "#dh1-rooms .room1 button", price: 10, hotel: "City Park" },
+      { selector: "#dh1-rooms .room2 button", price: 12, hotel: "City Park" },
+      { selector: "#dh1-rooms .room3 button", price: 15, hotel: "City Park" },
+
+      { selector: "#dh2-rooms .room4 button", price: 10, hotel: "Oasis Inn" },
+      { selector: "#dh2-rooms .room5 button", price: 12, hotel: "Oasis Inn" },
+      { selector: "#dh2-rooms .room6 button", price: 15, hotel: "Oasis Inn" },
+
+      { selector: "#mh1-rooms .room7 button", price: 10, hotel: "Hilton Mumbai" },
+      { selector: "#mh1-rooms .room8 button", price: 12, hotel: "Hilton Mumbai" },
+      { selector: "#mh1-rooms .room9 button", price: 15, hotel: "Hilton Mumbai" },
+
+      { selector: "#mh2-rooms .room10 button", price: 10, hotel: "Taj Mumbai" },
+      { selector: "#mh2-rooms .room11 button", price: 12, hotel: "Taj Mumbai" },
+      { selector: "#mh2-rooms .room12 button", price: 15, hotel: "Taj Mumbai" },
+    ];
+
+    // **4. Wire them all up**
+    roomMappings.forEach(({ selector, price: p, hotel }) => {
+      const btn = document.querySelector(selector);
+      if (btn) btn.addEventListener("click", () => selectRoom(p, hotel));
+    });
+  });
+
+  function roundTime(input) {
+            let time = input.value;
+            let [hours, minutes] = time.split(":");
+            if (minutes !== "00") {
+                // Set minutes to "00" for whole hours
+                input.value = `${hours}:00`;
+            }
         }
-    </script>
 
-    <script src="client.js"></script>
 
-    <!-- Moment.js -->
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // … your existing city/hotel code …
 
-    <!-- Moment-Timezone -->
-    <script src="https://cdn.jsdelivr.net/npm/moment-timezone@0.5.43/builds/moment-timezone-with-data.min.js"></script>
+    // 1) Grab the submit button and hide it initially
+    const submitBtn = document.getElementById("btn");
+    submitBtn.style.display = "none";
 
-</body>
+    // 2) Variables to track selection
+    let price = 0;
+    let hotelName = "";
 
+    // 3) Helper to set both at once and reveal the submit button
+    function selectRoom(p, hotel) {
+      price     = p;
+      hotelName = hotel;
+      console.log(`Selected: ${hotelName} @ ₹${price}`);
+      // now that a room is chosen, show the submit button:
+      submitBtn.style.display = "block";
+    }
+
+    // 4) Map each room button to its price & hotel
+    const roomMappings = [
+      { selector: "#dh1-rooms .room1 button", price: 10, hotel: "City Park" },
+      { selector: "#dh1-rooms .room2 button", price: 12, hotel: "City Park" },
+      { selector: "#dh1-rooms .room3 button", price: 15, hotel: "City Park" },
+      { selector: "#dh2-rooms .room4 button", price: 10, hotel: "Oasis Inn" },
+      { selector: "#dh2-rooms .room5 button", price: 12, hotel: "Oasis Inn" },
+      { selector: "#dh2-rooms .room6 button", price: 15, hotel: "Oasis Inn" },
+      { selector: "#mh1-rooms .room7 button", price: 10, hotel: "Hilton Mumbai" },
+      { selector: "#mh1-rooms .room8 button", price: 12, hotel: "Hilton Mumbai" },
+      { selector: "#mh1-rooms .room9 button", price: 15, hotel: "Hilton Mumbai" },
+      { selector: "#mh2-rooms .room10 button", price: 10, hotel: "Taj Mumbai" },
+      { selector: "#mh2-rooms .room11 button", price: 12, hotel: "Taj Mumbai" },
+      { selector: "#mh2-rooms .room12 button", price: 15, hotel: "Taj Mumbai" },
+    ];
+
+    // 5) Wire them all up to our selectRoom helper
+    roomMappings.forEach(({ selector, price: p, hotel }) => {
+      const btn = document.querySelector(selector);
+      if (btn) btn.addEventListener("click", () => selectRoom(p, hotel));
+    });
+
+    // … your existing time‐rounding code …
+  });
+
+      </script>
+
+<script src="client.js"></script>
+
+      
+  </body>
 </html>
