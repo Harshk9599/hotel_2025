@@ -13,7 +13,8 @@
 
     
     <style>
-      /* Existing styles ... */
+
+        /* Existing styles ... */
       #header {
         display: flex;
         justify-content: center;
@@ -252,7 +253,16 @@
       .room3 button:hover img,
       .room4 button:hover img,
       .room5 button:hover img,
-      .room6 button:hover img {
+      .room6 button:hover img,
+      .room7 button:hover img, 
+      .room8 button:hover img, 
+      .room9 button:hover img, 
+      .room10 button:hover img, 
+      .room11 button:hover img, 
+      .room12 button:hover img,
+      .mh1 img,
+      .mh2 img
+       {
         transform: scale(1.05);
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -306,6 +316,8 @@
   width: 100%;
   max-width: 500px;
   margin: auto;
+  margin-top: -25%;
+  
 }
 
 /* 2) Labels */
@@ -355,9 +367,52 @@
   background: linear-gradient(to right, #5c3dc5, #00a4cc);
 }
 
-/*       mobile view */
+#hero {
+    width: 100%;
+    background-image: url(https://cdn.shopify.com/s/files/1/0732/9080/9596/files/hero_b4f87008-ed48-4223-8a4c-c2058915f57b.png?v=1745310071);
+    height: 100vh;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
 
+#text-box{
+    width: 800px;
+      height: 100px;
+      background-color: #6c93ad; /* You can change this to any color */
+      display: flex;
+      justify-content: center;
+      margin: auto;
+      border-radius: 30px;
+      margin-top: 20px;
+      display: none;
       
+}
+.city1 button,
+.city2 button,
+#dh1Btn,
+#dh2Btn,
+.room1 button,
+.room2 button,
+.room3 button,
+.room4 button,
+.room5 button,
+.room6 button,
+.mh1 button,
+.mh2 button,
+.room7 button,
+.room8 button,
+.room9 button,
+.room10 button,
+.room11 button,
+.room12 button{
+    background: transparent;
+    border:none;
+}
+.mumbai-hotels {
+    height: 75vh;
+}
+
 
 @media screen and (min-width: 320px) and (max-width: 430px) {
   
@@ -428,17 +483,14 @@
         color: transparent;
 }
 
-
-
-
-    </style>
-  </head>
+      </style>
+      </head>
   <body>
     <!-- heading -->
     <div id="header"><h1>LAVNA LOCKS</h1></div>
 
     <!-- navbar -->
-    <nav class="navbar">
+<!--     <nav class="navbar">
       <div class="logo"><img src="./assets/brand-logo.png" alt="Logo" /></div>
       <div class="dropdown">
         <button class="dropbtn">Choose a City</button>
@@ -447,7 +499,11 @@
           <a href="#mumbai">Mumbai</a>
         </div>
       </div>
-    </nav>
+    </nav> -->
+
+     <div id="hero">
+      
+    </div>
 
     <!-- details by customer -->
     <section>
