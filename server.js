@@ -15,24 +15,19 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Debug: check env loaded
-console.log("Loaded ENV:");
-console.log({
-  GMAIL_USER: process.env.GMAIL_USER,
-  CLIENT_ID: process.env.CLIENT_ID,
-  LOCK_ID: process.env.LOCK_ID
-});
-
-// Nodemailer setup
+// ✅ Nodemailer setup (IPv4 + better logs)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS
-  }
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  },
+  tls: { family: 4 } // 👈 important for Render
 });
 
-// Verify transporter on startup (helpful for Render)
+// ✅ Test transporter on startup
 transporter.verify((error, success) => {
   if (error) {
     console.error('❌ Email transporter error:', error);
@@ -41,25 +36,25 @@ transporter.verify((error, success) => {
   }
 });
 
-// Send email function
+// ✅ Send email function
 const sendKeyboardPwdEmail = async (email, keyboardPwd, startDate, startTime, endDate, endTime) => {
   const mailOptions = {
-    from: `"Your Company" <${process.env.GMAIL_USER}>`,
+    from: `"Hotel Booking" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Your Hotel Room OTP',
     text: `Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} was done successfully.\n\nHere is your OTP for your room: ${keyboardPwd}`
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent to: ${email}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent to:', email, info.response);
   } catch (err) {
     console.error('❌ Email send error:', err);
     throw err;
   }
 };
 
-// Main route to generate OTP
+// ✅ Main route to generate OTP
 app.post('/submit', (req, res) => {
   const { startDate, startTime, endDate, endTime } = req.body;
 
@@ -75,7 +70,7 @@ app.post('/submit', (req, res) => {
     accessToken: process.env.ACCESS_TOKEN,
     lockId: process.env.LOCK_ID,
     keyboardPwdType: '3',
-    keyboardPwdName: 'HotelRoomKey',
+    keyboardPwdName: 'test1',
     startDate: startTimestamp,
     endDate: endTimestamp,
     date: now
@@ -94,20 +89,17 @@ app.post('/submit', (req, res) => {
   const apiReq = https.request(options, (apiRes) => {
     let responseData = '';
 
-    apiRes.on('data', chunk => (responseData += chunk));
+    apiRes.on('data', chunk => {
+      responseData += chunk;
+    });
 
     apiRes.on('end', () => {
       try {
         const parsed = JSON.parse(responseData);
         const keyboardPwd = parsed.keyboardPwd;
 
-        if (!keyboardPwd) {
-          console.error('⚠️ TTLock API did not return a keyboardPwd:', parsed);
-          return res.status(500).json({ error: 'No OTP received from TTLock API', details: parsed });
-        }
-
-        console.log('✅ OTP generated:', keyboardPwd);
-        res.json({ keyboardPwd });
+        console.log('🔢 OTP Generated:', keyboardPwd);
+        res.json({ keyboardPwd }); // send OTP to frontend
       } catch (e) {
         console.error('❌ Failed to parse API response:', e);
         res.status(500).json({ error: 'Failed to parse API response' });
@@ -124,20 +116,22 @@ app.post('/submit', (req, res) => {
   apiReq.end();
 });
 
-// Email sender endpoint
-app.post('/send-otp', async (req, res) => {
+// ✅ Email sender endpoint
+app.post('/send-otp', (req, res) => {
   const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
 
   if (!email || !keyboardPwd || !startDate || !startTime || !endDate || !endTime) {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
-  try {
-    await sendKeyboardPwdEmail(email, keyboardPwd, startDate, startTime, endDate, endTime);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to send email', error: err.message });
-  }
+  console.log('📧 Attempting to send email to:', email);
+
+  sendKeyboardPwdEmail(email, keyboardPwd, startDate, startTime, endDate, endTime)
+    .then(() => res.json({ success: true }))
+    .catch((err) => {
+      console.error('❌ Failed to send email:', err);
+      res.status(500).json({ success: false, message: 'Failed to send email' });
+    });
 });
 
 app.get('/', (req, res) => {
@@ -147,7 +141,6 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
 });
-
 
 
 
