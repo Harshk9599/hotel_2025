@@ -5,7 +5,7 @@ const https = require('https');
 const { URLSearchParams } = require('url');
 const { DateTime } = require('luxon');
 const path = require('path');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,46 +15,31 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ Nodemailer setup (IPv4 + better logs)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: { family: 4 } // 👈 important for Render
-});
+// ✅ SendGrid setup
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// ✅ Test transporter on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Email transporter error:', error);
-  } else {
-    console.log('✅ Email transporter ready');
-  }
-});
-
-// ✅ Send email function
+// ✅ Send email via SendGrid
 const sendKeyboardPwdEmail = async (email, keyboardPwd, startDate, startTime, endDate, endTime) => {
-  const mailOptions = {
-    from: `"Hotel Booking" <${process.env.EMAIL_USER}>`,
+  const msg = {
     to: email,
+    from: {
+      email: process.env.SENDER_EMAIL,
+      name: 'Hotel Booking'
+    },
     subject: 'Your Hotel Room OTP',
     text: `Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} was done successfully.\n\nHere is your OTP for your room: ${keyboardPwd}`
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent to:', email, info.response);
+    await sgMail.send(msg);
+    console.log('✅ Email sent to:', email);
   } catch (err) {
-    console.error('❌ Email send error:', err);
+    console.error('❌ SendGrid email error:', err.response?.body || err);
     throw err;
   }
 };
 
-// ✅ Main route to generate OTP
+// ✅ OTP Generation
 app.post('/submit', (req, res) => {
   const { startDate, startTime, endDate, endTime } = req.body;
 
@@ -97,9 +82,8 @@ app.post('/submit', (req, res) => {
       try {
         const parsed = JSON.parse(responseData);
         const keyboardPwd = parsed.keyboardPwd;
-
         console.log('🔢 OTP Generated:', keyboardPwd);
-        res.json({ keyboardPwd }); // send OTP to frontend
+        res.json({ keyboardPwd });
       } catch (e) {
         console.error('❌ Failed to parse API response:', e);
         res.status(500).json({ error: 'Failed to parse API response' });
@@ -116,7 +100,7 @@ app.post('/submit', (req, res) => {
   apiReq.end();
 });
 
-// ✅ Email sender endpoint
+// ✅ Send OTP via email
 app.post('/send-otp', (req, res) => {
   const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
 
@@ -124,14 +108,10 @@ app.post('/send-otp', (req, res) => {
     return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
-  console.log('📧 Attempting to send email to:', email);
-
+  console.log('📧 Sending email to:', email);
   sendKeyboardPwdEmail(email, keyboardPwd, startDate, startTime, endDate, endTime)
     .then(() => res.json({ success: true }))
-    .catch((err) => {
-      console.error('❌ Failed to send email:', err);
-      res.status(500).json({ success: false, message: 'Failed to send email' });
-    });
+    .catch(() => res.status(500).json({ success: false, message: 'Failed to send email' }));
 });
 
 app.get('/', (req, res) => {
@@ -142,6 +122,160 @@ app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
 });
 
+
+
+// ********************************************************************************************************************************************************************
+// SMTP Server type code but blocked by render works on local host
+
+
+// require('dotenv').config();
+// const express = require('express');
+// const bodyParser = require('body-parser');
+// const https = require('https');
+// const { URLSearchParams } = require('url');
+// const { DateTime } = require('luxon');
+// const path = require('path');
+// const nodemailer = require('nodemailer');
+
+// const app = express();
+// const port = process.env.PORT || 3000;
+
+// // Middleware
+// app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(bodyParser.json());
+// app.use(express.static(path.join(__dirname, 'public')));
+
+// // ✅ Nodemailer setup (IPv4 + better logs)
+// const transporter = nodemailer.createTransport({
+//   host: 'smtp.gmail.com',
+//   port: 465,
+//   secure: true,
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS
+//   },
+//   tls: { family: 4 } // 👈 important for Render
+// });
+
+// // ✅ Test transporter on startup
+// transporter.verify((error, success) => {
+//   if (error) {
+//     console.error('❌ Email transporter error:', error);
+//   } else {
+//     console.log('✅ Email transporter ready');
+//   }
+// });
+
+// // ✅ Send email function
+// const sendKeyboardPwdEmail = async (email, keyboardPwd, startDate, startTime, endDate, endTime) => {
+//   const mailOptions = {
+//     from: `"Hotel Booking" <${process.env.EMAIL_USER}>`,
+//     to: email,
+//     subject: 'Your Hotel Room OTP',
+//     text: `Your hotel booking from ${startDate} ${startTime} to ${endDate} ${endTime} was done successfully.\n\nHere is your OTP for your room: ${keyboardPwd}`
+//   };
+
+//   try {
+//     const info = await transporter.sendMail(mailOptions);
+//     console.log('✅ Email sent to:', email, info.response);
+//   } catch (err) {
+//     console.error('❌ Email send error:', err);
+//     throw err;
+//   }
+// };
+
+// // ✅ Main route to generate OTP
+// app.post('/submit', (req, res) => {
+//   const { startDate, startTime, endDate, endTime } = req.body;
+
+//   const startDateTime = DateTime.fromFormat(`${startDate} ${startTime}`, 'yyyy-MM-dd HH:mm', { zone: 'Asia/Kolkata' });
+//   const endDateTime = DateTime.fromFormat(`${endDate} ${endTime}`, 'yyyy-MM-dd HH:mm', { zone: 'Asia/Kolkata' });
+
+//   const startTimestamp = startDateTime.toMillis();
+//   const endTimestamp = endDateTime.toMillis();
+//   const now = DateTime.now().setZone('Asia/Kolkata').toMillis();
+
+//   const data = new URLSearchParams({
+//     clientId: process.env.CLIENT_ID,
+//     accessToken: process.env.ACCESS_TOKEN,
+//     lockId: process.env.LOCK_ID,
+//     keyboardPwdType: '3',
+//     keyboardPwdName: 'test1',
+//     startDate: startTimestamp,
+//     endDate: endTimestamp,
+//     date: now
+//   }).toString();
+
+//   const options = {
+//     hostname: 'euapi.sciener.com',
+//     path: '/v3/keyboardPwd/get',
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/x-www-form-urlencoded',
+//       'Content-Length': data.length
+//     }
+//   };
+
+//   const apiReq = https.request(options, (apiRes) => {
+//     let responseData = '';
+
+//     apiRes.on('data', chunk => {
+//       responseData += chunk;
+//     });
+
+//     apiRes.on('end', () => {
+//       try {
+//         const parsed = JSON.parse(responseData);
+//         const keyboardPwd = parsed.keyboardPwd;
+
+//         console.log('🔢 OTP Generated:', keyboardPwd);
+//         res.json({ keyboardPwd }); // send OTP to frontend
+//       } catch (e) {
+//         console.error('❌ Failed to parse API response:', e);
+//         res.status(500).json({ error: 'Failed to parse API response' });
+//       }
+//     });
+//   });
+
+//   apiReq.on('error', error => {
+//     console.error('❌ API request error:', error);
+//     res.status(500).json({ error: 'API request error' });
+//   });
+
+//   apiReq.write(data);
+//   apiReq.end();
+// });
+
+// // ✅ Email sender endpoint
+// app.post('/send-otp', (req, res) => {
+//   const { email, keyboardPwd, startDate, startTime, endDate, endTime } = req.body;
+
+//   if (!email || !keyboardPwd || !startDate || !startTime || !endDate || !endTime) {
+//     return res.status(400).json({ success: false, message: 'Missing required fields' });
+//   }
+
+//   console.log('📧 Attempting to send email to:', email);
+
+//   sendKeyboardPwdEmail(email, keyboardPwd, startDate, startTime, endDate, endTime)
+//     .then(() => res.json({ success: true }))
+//     .catch((err) => {
+//       console.error('❌ Failed to send email:', err);
+//       res.status(500).json({ success: false, message: 'Failed to send email' });
+//     });
+// });
+
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'index.html'));
+// });
+
+// app.listen(port, () => {
+//   console.log(`🚀 Server running at http://localhost:${port}`);
+// });
+
+
+// LOCAL WORKS FINE ENDS
+
+// ********************************************************************************************************************************************************************
 
 
 
